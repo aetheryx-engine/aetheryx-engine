@@ -1,0 +1,355 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1c2526">
+  <title>Aetheryx Engine</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      font-weight: bold;
+      background: #1c2526;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 200px;
+      background: #2e2e3e;
+      padding: 10px 0;
+      overflow-y: auto;
+    }
+    .sidebar a {
+      display: block;
+      padding: 10px;
+      color: #9370db;
+      text-decoration: none;
+      transition: background 0.3s;
+    }
+    .sidebar a:hover {
+      background: #3e3e4e;
+    }
+    .main {
+      flex: 1;
+      padding: 20px;
+      background: #1c2526;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-size: 2em;
+      color: #9370db;
+      text-shadow: 0 0 5px #9370db;
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      font-weight: 900; /* Hard Rock Bet-inspired bold Arial */
+    }
+    .fight-details {
+      display: none;
+      background: rgba(46, 46, 62, 0.9);
+      border-radius: 5px;
+      padding: 15px;
+      margin-top: 10px;
+      animation: fadeIn 0.3s;
+    }
+    .fight-details p {
+      margin: 5px 0;
+      font-size: 0.9em;
+      color: #e0e0e0;
+    }
+    .fight-details strong {
+      color: #9370db;
+    }
+    .bet-high { color: #28a745; } /* Green for ≥70% confidence */
+    .bet-medium { color: #ffc107; } /* Yellow for 50-69% confidence */
+    .bet-low { color: #dc3545; } /* Red for <50% confidence */
+    .controls {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .controls a {
+      background: #9370db;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      margin: 0 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .controls a:hover {
+      background: #a68fd5;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+  <script>
+    // Define showDetails globally
+    window.showDetails = function(fightId) {
+      const details = document.querySelectorAll('.fight-details');
+      if (details.length > 0) {
+        details.forEach(d => {
+          d.style.display = d.id === fightId ? 'block' : 'none';
+        });
+      } else {
+        console.error('No fight-details elements found');
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Add event listeners after DOM is ready
+      document.querySelectorAll('.sidebar a').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const match = link.getAttribute('onclick').match(/showDetails\('(.+)'\)/);
+          if (match) {
+            showDetails(match[1]);
+          }
+        });
+      });
+
+      // Show first fight by default
+      showDetails('mederos');
+    });
+
+    function shareLink() {
+      const url = window.location.href;
+      if (navigator.share) {
+        navigator.share({ title: 'Aetheryx Engine', url: url }).catch(console.error);
+      } else {
+        prompt('Share this link with friends:', url);
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="sidebar">
+    <a href="#" onclick="showDetails('mederos')">MarQuel Mederos vs. Mark Choinski</a>
+    <a href="#" onclick="showDetails('salkilld')">Quillan Salkilld vs. Yanal Ashmouz</a>
+    <a href="#" onclick="showDetails('yoo')">Joo Sang Yoo vs. Jeka Saragih</a>
+    <a href="#" onclick="showDetails('lipski')">Ariane Lipski vs. Cong Wang</a>
+    <a href="#" onclick="showDetails('williams')">Khaos Williams vs. Andreas Gustafsson</a>
+    <a href="#" onclick="showDetails('spivac')">Serghei Spivac vs. Waldo Cortes-Acosta</a>
+    <a href="#" onclick="showDetails('murzakanov')">Azamat Murzakanov vs. Brendson Ribeiro</a>
+    <a href="#" onclick="showDetails('silva')">Bruno Silva vs. Joshua Van</a>
+    <a href="#" onclick="showDetails('luque')">Vicente Luque vs. Kevin Holland</a>
+    <a href="#" onclick="showDetails('mix')">Patchy Mix vs. Mario Bautista</a>
+    <a href="#" onclick="showDetails('gastelum')">Kelvin Gastelum vs. Joe Pyfer</a>
+    <a href="#" onclick="showDetails('pena')">Julianna Pena vs. Kayla Harrison</a>
+    <a href="#" onclick="showDetails('merab')">Merab Dvalishvili vs. Sean O’Malley</a>
+  </div>
+  <div class="main">
+    <div class="header">
+      <h1>Aetheryx Engine</h1>
+    </div>
+    <div id="mederos" class="fight-details">
+      <p><strong>Top Bets:</strong></p>
+      <p>1. <span class="bet-medium">Over 2.5 Rounds (+110, $1 to $2.10)</span> - 70% confidence</p>
+      <p>2. <span class="bet-high">Mederos to Win by Decision (+145, $1 to $2.45)</span> - 74% confidence</p>
+      <p>3. <span class="bet-medium">Fight to Reach Round 2 (Yes, -750, $1 to $1.13)</span> - 85% confidence</p>
+      <p>4. <span class="bet-medium">Mederos to Win Over 1.5 Rounds (Yes, +100, $1 to $2.00)</span> - 68% confidence</p>
+      <p><strong>Win Prob:</strong> 74% (Mederos)</p>
+      <p><strong>Round Likelihood:</strong> 70% Over 2.5, Mean 2.8 rounds</p>
+      <p><strong>Key Stats:</strong> Mederos 5.1 SLpM, Choinski untested</p>
+      <p><strong>Live Trigger:</strong> If Mederos dominates Round 1, bet Over 2.5 at -120</p>
+      <p><strong>Trend:</strong> Mederos 60% decisions</p>
+      <p><strong>X Sentiment:</strong> 65% on Mederos (@WWeight_Wagers)</p>
+    </div>
+    <div id="salkilld" class="fight-details">
+      <p><strong>Top Bets:</strong></p>
+      <p>1. <span class="bet-high">Under 1.5 Rounds (+120, $1 to $2.20)</span> - 90% confidence</p>
+      <p>2. <span class="bet-high">Salkilld to Win by KO/TKO (+180, $1 to $2.80)</span> - 88% confidence</p>
+      <p>3. <span class="bet-medium">Fight to Reach Round 2 (No, +475, $1 to $5.75)</span> - 61% confidence</p>
+      <p><strong>Win Prob:</strong> 90% (Salkilld)</p>
+      <p><strong>Round Likelihood:</strong> 61% Under 1.5, Mean 1.6 rounds</p>
+      <p><strong>Key Stats:</strong> Salkilld 5.68 SLpM, Ashmouz 40% defense</p>
+      <p><strong>Live Trigger:</strong> If Salkilld lands early, bet Under 1.5 at +150</p>
+      <p><strong>Trend:</strong> Salkilld 100% finishes in UFC</p>
+      <p><strong>X Sentiment:</strong> 85% on Salkilld (@MMABetSharp)</p>
+    </div>
+    <div id="yoo" class="fight-details">
+      <p><strong>Top Bets:</strong></p>
+      <p>1. <span class="bet-high">Under 1.5 Rounds (+115, $1 to $2.15)</span> - 93% confidence</p>
+      <p>2. <span class="bet-high">Yoo to Win by Submission (+240, $1 to $3.40)</span> - 92% confidence</p>
+      <p>3. <span class="bet-high">Fight to Go the Distance (No, -200, $1 to $1.50)</span> - 76% confidence</p>
+      <p><strong>Win Prob:</strong> 93% (Yoo)</p>
+      <p><strong>Round Likelihood:</strong> 76% Under 1.5, Mean 1.2 rounds</p>
+      <p><strong>Key Stats:</strong> Yoo 80% finish rate, Saragih 30% defense</p>
+      <p><strong>Live Trigger:</strong> If Yoo takes top control, bet Under 1.5 at +130</p>
+      <p><strong>Trend:</strong> Yoo 3 straight subs</p>
+      <p><strong>X Sentiment:</strong> 90% on Yoo (@WWeight_Wagers)</p>
+    </div>
+    <div id="lipski" class="fight-details">
+      <p><strong>Top Bets:</strong></p>
+      <p>1. <span class="bet-high">Under 2.5 Rounds (+114, $1 to $2.14)</span> - 87% confidence</p>
+      <p>2. <span class="bet-high">Wang to Win by KO/TKO (+200, $1 to $3.00)</span> - 86% confidence</p>
+      <p>3. <span class="bet-medium">Fight to Reach Round 2 (No, +400, $1 to $5.00)</span> - 71% confidence</p>
+      <p><strong>Win Prob:</strong> 87% (Wang)</p>
+      <p><strong>Round Likelihood:</strong> 71% Under 2.5, Mean 1.8 rounds</p>
+      <p><strong>Key Stats:</strong> Wang 66% early finishes, Lipski 4 subs</p>
+      <p><strong>Live Trigger:</strong> If Wang lands early, bet Under 2.5 at -110</p>
+      <p><strong>Trend:</strong> Wang 7-1 record</p>
+      <p><strong>X Sentiment:</strong> 70% on Wang (@MMABetSharp)</p>
+    </div>
+    <div id="williams" class="fight-details">
+      <p><strong>Top Bets:</strong></p>
+      <p>1. <span class="bet-high">Under 2.5 Rounds (-110, $1 to $1.91)</span> - 77% confidence</p>
+      <p>2. <span class="bet-high">Williams to Win by KO/TKO (+135, $1 to $2.35)</span> - 76% confidence</p>
+      <p>3. <span class="bet-medium">Fight to Reach Round 2 (No, +300, $1 to $4.00)</span> - 72% confidence</p>
+      <p><strong>Win Prob:</strong> 77% (Williams)</p>
+      <p><strong>Round Likelihood:</strong> 72% Under 2.5, Mean 1.7 rounds</p>
+      <p><strong>Key Stats:</strong> Williams 4 KOs, Gustafsson untested</p>
+      <p><strong>Live Trigger:</strong> If Williams lands big in Round 1, bet Under 1.5 at +200</p>
+      <p><strong>Trend:</strong> Williams 70% under 2.5</p>
+      <p><strong>X Sentiment:</strong> 75% on Williams (@WWeight_Wagers)</p>
+    </div>
+    <div id="spivac" class="fight-details">
+      <p><strong>Top Bets:</strong></p>
+      <p>1. <span class="bet-medium">Under 2.5 Rounds (+130, $1 to $2.30)</span> - 54% confidence</p>
+      <p>2. <span class="bet-low">Spivac to Win by Submission (+560, $1 to $6.60)</span> - 45% confidence</p>
+      <p>3. <span class="bet-medium">Fight to Go the Distance (No, -125, $1 to $1.80)</span> - 64% confidence</p>
+      <p><strong>Win Prob:</strong> 54% (Spivac)</p>
+      <p><strong>Round Likelihood:</strong> 64% Under 2.5, Mean 2.1 rounds</p>
+      <p><strong>Key Stats:</strong> Spivac 2.5 takedowns/fight, Acosta 2 KOs</p>
+      <p><strong>Live Trigger:</strong> If Spivac lands takedowns early, bet Under 2.5 at +150</p>
+      <p><strong>Trend:</strong> Spivac 5/7 under 2.5</p>
+      <p><strong>X Sentiment:</strong> 60% on Spivac (@MMABetSharp)</p>
+    </div>
+    <div id="murzakanov" class="fight-details">
+      <p><strong>Top Bets:</strong></p>
+      <p>1. <span class="bet-high">Under 1.5 Rounds (-160, $1 to $1.63)</span> - 95% confidence</p>
+      <p>2. <span class="bet-high">Murzakanov to Win by KO/TKO (+150, $1 to $2.50)</span> - 94% confidence</p>
+      <p>3. <span class="bet-high">Fight to Reach Round 2 (No, +200, $1 to $3.00)</span> - 81% confidence</p>
+      <p><strong>Win Prob:</strong> 95% (Murzakanov)</p>
+      <p><strong>Round Likelihood:</strong> 81% Under 1.5, Mean 1.1 rounds</p>
+      <p><strong>Key Stats:</strong> Murzakanov 80% under 1.5, Ribeiro 40% defense</p>
+      <p><strong>Live Trigger:</strong> If Murzakanov lands early, hold for +150</p>
+      <p><strong>Trend:</strong> Murzakanov 3/4 KOs</p>
+      <p><strong>X Sentiment:</strong> 90% on Murzakanov (@WWeight_Wagers)</p>
+    </div>
+    <div id="silva" class="fight-details">
+      <p><strong>Top Bets:</strong></p>
+      <p>1. <span class="bet-high">Over 2.5 Rounds (-170, $1 to $1.59)</span> - 90% confidence</p>
+      <p>2. <span class="bet-high">Van to Win by Decision (+200, $1 to $3.00)</span> - 89% confidence</p>
+      <p>3. <span class="bet-medium">Fight to Reach Round 3 (Yes, +175, $1 to $2.75)</span> - 75% confidence</p>
+      <p><strong>Win Prob:</strong> 90% (Van)</p>
+      <p><strong>Round Likelihood:</strong> 75% Over 2.5, Mean 2.9 rounds</p>
+      <p><strong>Key Stats:</strong> Van 6.2 SLpM, Silva 55% decisions</p>
+      <p><strong>Live Trigger:</strong> If Van controls pace, bet Over 2.5 at -180</p>
+      <p><strong>Trend:</strong> Van 3 straight decisions</p>
+      <p><strong>X Sentiment:</strong> 80% on Van (@MMABetSharp)</p>
+    </div>
+    <div id="luque" class="fight-details">
+      <p><strong>Top Bets:</strong></p>
+      <p>1. <span class="bet-medium">Over 1.5 Rounds (+135, $1 to $2.35)</span> - 60% confidence</p>
+      <p>2. <span class="bet-low">Luque to Win by Submission (+900, $1 to $10.00)</span> - 40% confidence</p>
+      <p>3. <span class="bet-medium">Fight to Go the Distance (Yes, +200, $1 to $3.00)</span> - 68% confidence</p>
+      <p><strong>Win Prob:</strong> 60% (Holland), 40% (Luque sub)</p>
+      <p><strong>Round Likelihood:</strong> 68% Over 1.5, Mean 2.3 rounds</p>
+      <p><strong>Key Stats:</strong> Luque 53% takedowns, Holland 1-2 ground</p>
+      <p><strong>Live Trigger:</strong> If Luque lands takedowns, bet Submission at +1000</p>
+      <p><strong>Trend:</strong> Luque 1 sub 2024</p>
+      <p><strong>X Sentiment:</strong> 55% on Holland (@WWeight_Wagers)</p>
+    </div>
+    <div id="mix" class="fight-details">
+      <p><strong>Top Bets:</strong></p>
+      <p>1. <span class="bet-high">Under 2.5 Rounds (+130, $1 to $2.30)</span> - 65% confidence</p>
+      <p>2. <span class="bet-high">Mix to Win by Submission (+200, $1 to $3.00)</span> - 64% confidence</p>
+      <p>3. <span class="bet-medium">Fight to Go the Distance (No, -125, $1 to $1.80)</span> - 61% confidence</p>
+      <p><strong>Win Prob:</strong> 65% (Mix)</p>
+      <p><strong>Round Likelihood:</strong> 61% Under 2.5, Mean 2.0 rounds</p>
+      <p><strong>Key Stats:</strong> Mix 7 subs, Bautista 70% decisions</p>
+      <p><strong>Live Trigger:</strong> If Mix takes top, bet Under 2.5 at +150</p>
+      <p><strong>Trend:</strong> Mix 60% under 2.5</p>
+      <p><strong>X Sentiment:</strong> 70% on Mix (@MMABetSharp)</p>
+    </div>
+    <div id="gastelum" class="fight-details">
+      <p><strong>Top Bets:</strong></p>
+      <p>1. <span class="bet-high">Under 2.5 Rounds (-130, $1 to $1.77)</span> - 84% confidence</p>
+      <p>2. <span class="bet-high">Pyfer to Win by KO/TKO (+150, $1 to $2.50)</span> - 83% confidence</p>
+      <p>3. <span class="bet-high">Fight to Reach Round 2 (No, +200, $1 to $3.00)</span> - 71% confidence</p>
+      <p><strong>Win Prob:</strong> 84% (Pyfer)</p>
+      <p><strong>Round Likelihood:</strong> 71% Under 2.5, Mean 1.9 rounds</p>
+      <p><strong>Key Stats:</strong> Pyfer 3 KOs, Gastelum 60% over 2.5</p>
+      <p><strong>Live Trigger:</strong> If Pyfer lands early, bet Under 1.5 at +250</p>
+      <p><strong>Trend:</strong> Pyfer 70% under 2.5</p>
+      <p><strong>X Sentiment:</strong> 80% on Pyfer (@WWeight_Wagers)</p>
+    </div>
+    <div id="pena" class="fight-details">
+      <p><strong>Top Bets:</strong></p>
+      <p>1. <span class="bet-high">Over 2.5 Rounds (-150, $1 to $1.67)</span> - 92% confidence</p>
+      <p>2. <span class="bet-high">Harrison to Win by Decision (+200, $1 to $3.00)</span> - 91% confidence</p>
+      <p>3. <span class="bet-medium">Fight to Reach Round 3 (Yes, +175, $1 to $2.75)</span> - 78% confidence</p>
+      <p><strong>Win Prob:</strong> 92% (Harrison)</p>
+      <p><strong>Round Likelihood:</strong> 78% Over 2.5, Mean 3.1 rounds</p>
+      <p><strong>Key Stats:</strong> Harrison 2.75 takedowns/15 min, Pena 23% defense</p>
+      <p><strong>Live Trigger:</strong> If Harrison controls early, bet Over 2.5 at -160</p>
+      <p><strong>Trend:</strong> Harrison 3/4 decisions</p>
+      <p><strong>X Sentiment:</strong> 85% on Harrison (@MMABetSharp)</p>
+    </div>
+    <div id="merab" class="fight-details">
+      <p><strong>Top Bets:</strong></p>
+      <p>1. <span class="bet-high">Over 3.5 Rounds (-160, $1 to $1.63)</span> - 81% confidence</p>
+      <p>2. <span class="bet-high">Merab to Win by Decision (+130, $1 to $2.30)</span> - 80% confidence</p>
+      <p>3. <span class="bet-high">Over 5.5 Takedowns (+120, $1 to $2.20)</span> - 73% confidence</p>
+      <p><strong>Win Prob:</strong> 81% (Merab)</p>
+      <p><strong>Round Likelihood:</strong> 73% Over 3.5, Mean 4.2 rounds</p>
+      <p><strong>Key Stats:</strong> Merab 7.5 takedowns/fight, O’Malley 40% defense</p>
+      <p><strong>Live Trigger:</strong> If Merab lands 3+ takedowns in Round 1, bet Over 5.5 at +100</p>
+      <p><strong>Trend:</strong> Merab 80% decisions</p>
+      <p><strong>X Sentiment:</strong> 80% on Merab (@WWeight_Wagers)</p>
+    </div>
+    <div class="controls">
+      <a href="#" onclick="shareLink()">📲 Share with Friends</a>
+    </div>
+  </div>
+</body>
+</html>
